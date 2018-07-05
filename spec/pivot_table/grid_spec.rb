@@ -11,6 +11,7 @@ module PivotTable
       it { is_expected.to respond_to :columns }
       it { is_expected.to respond_to :rows }
       it { is_expected.to respond_to :grand_total }
+      it { is_expected.to respond_to :hash }
     end
 
     let(:d1) { build_data_object(1, 'r1', 'c1') }
@@ -125,6 +126,37 @@ module PivotTable
         let(:build_result) { instance.build }
         subject { build_result.data_grid }
         it { should == [[d1, d2, d3], [d4, d5, d6]] }
+      end
+    end
+
+    context 'when data source entries are hash-like' do
+      # let(:data) { [{ :gender => "male" }, { :
+      let(:instance) do
+        Grid.new do |g|
+          g.source_data = [
+            { :date => "Monday", :participants  => 50, :gender  => "female" },
+            { :date => "Monday", :participants  => 100, :gender => "male"   },
+            { :date => "Tuesday", :participants => 40, :gender  => "female" },
+            { :date => "Tuesday", :participants => 70, :gender  => "male"   }
+          ]
+
+          g.row_name = :date
+          g.column_name = :gender
+          g.field_name = :participants
+          g.hash = true
+        end
+      end
+
+      let(:build_result) { instance.build }
+
+      context 'headers' do
+        subject { build_result.row_headers }
+        it { should == ["Monday", "Tuesday"] }
+      end
+
+      context 'data grid' do
+        subject { build_result.data_grid }
+        it { should == [[50, 100], [40, 70]] }
       end
     end
   end

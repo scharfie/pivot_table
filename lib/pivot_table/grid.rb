@@ -1,11 +1,12 @@
 module PivotTable
   class Grid
 
-    attr_accessor :source_data, :row_name, :column_name, :value_name, :field_name
+    attr_accessor :source_data, :row_name, :column_name, :value_name, :field_name, :hash
     attr_reader :columns, :rows, :data_grid, :configuration
 
     DEFAULT_OPTIONS = {
-      :sort => true
+      :sort => true,
+      :hash => false
     }
 
     def initialize(opts = {}, &block)
@@ -83,7 +84,8 @@ module PivotTable
     private
 
     def headers(method)
-      hdrs = source_data.collect { |c| c.send method }.uniq
+      hash = configuration.hash
+      hdrs = source_data.collect { |c| hash ? c[method] : c.send(method) }.uniq
       configuration.sort ? hdrs.sort : hdrs
     end
 
@@ -97,21 +99,29 @@ module PivotTable
 
     def find_data_item(row, col)
       source_data.find do |item|
-        item.send(row_name) == row && item.send(column_name) == col
+        if hash
+          item[row_name] == row && item[column_name] == col
+        else
+          item.send(row_name) == row && item.send(column_name) == col
+        end
       end
     end
 
     def derive_row_value(row, col)
       data_item = find_data_item(row, col)
       if has_field_name?(data_item)
-        data_item.send(field_name)
+        hash ? data_item[field_name] : data_item.send(field_name)
       else
         data_item
       end
     end
 
     def has_field_name?(data_item)
-      !!(field_name && data_item.respond_to?(field_name))
+      if hash
+        !!(field_name && data_item.has_key?(field_name))
+      else
+        !!(field_name && data_item.respond_to?(field_name))
+      end
     end
   end
 end
