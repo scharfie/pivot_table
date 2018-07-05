@@ -109,7 +109,8 @@ module PivotTable
 
     def derive_row_value(row, col)
       data_item = find_data_item(row, col)
-      if has_field_name?(data_item)
+
+      if data_item && has_field_name?(data_item)
         hash ? data_item[field_name] : data_item.send(field_name)
       else
         data_item
@@ -117,6 +118,8 @@ module PivotTable
     end
 
     def has_field_name?(data_item)
+      return false if data_item.nil?
+
       if hash
         !!(field_name && data_item.has_key?(field_name))
       else

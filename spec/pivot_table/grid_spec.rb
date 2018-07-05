@@ -150,13 +150,20 @@ module PivotTable
       let(:build_result) { instance.build }
 
       context 'headers' do
-        subject { build_result.row_headers }
-        it { should == ["Monday", "Tuesday"] }
+        it { expect(build_result.row_headers).to eq ["Monday", "Tuesday"] }
+        it { expect(build_result.column_headers).to eq ["female", "male"] }
       end
 
       context 'data grid' do
         subject { build_result.data_grid }
         it { should == [[50, 100], [40, 70]] }
+      end
+
+      context 'first data row' do
+        subject { build_result.rows[0] }
+        it { expect(subject.header).to eq "Monday" }
+        it { expect(subject.column_data('female')).to eq 50 }
+        it { expect(subject.column_data('male')).to eq 100 }
       end
     end
   end
