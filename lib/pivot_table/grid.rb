@@ -1,5 +1,6 @@
 module PivotTable
   class Grid
+    include DataAccessor
 
     attr_accessor :source_data, :row_name, :column_name, :value_name, :field_name, :hash
     attr_reader :columns, :rows, :data_grid, :configuration
@@ -27,6 +28,9 @@ module PivotTable
         rows << Row.new(
           :header     => row_headers[index],
           :data       => data,
+          :hash       => hash,
+          :row_name   => row_name,
+          :field_name => field_name,
           :value_name => value_name,
           :orthogonal_headers => column_headers
         )
@@ -37,9 +41,12 @@ module PivotTable
       @columns = []
       data_grid.transpose.each_with_index do |data, index|
         columns << Column.new(
-          :header           => column_headers[index],
-          :data             => data,
-          :value_name       => value_name,
+          :header             => column_headers[index],
+          :data               => data,
+          :hash               => hash,
+          :row_name           => row_name,
+          :field_name         => field_name,
+          :value_name         => value_name,
           :orthogonal_headers => row_headers
         )
       end
@@ -81,49 +88,57 @@ module PivotTable
       data_grid
     end
 
+    def to_hash(options={})
+      result = rows.map { |r| r.to_hash }
+
+      if options[:include_totals]
+        result.push(build_total_row.to_hash)
+      end
+
+      result
+    end
+
     private
 
     def headers(method)
       hash = configuration.hash
-      hdrs = source_data.collect { |c| hash ? c[method] : c.send(method) }.uniq
+      hdrs = source_data.collect { |c| read_data_field(c, method, hash) }.uniq
       configuration.sort ? hdrs.sort : hdrs
+    end
+
+    def build_total_row
+      data = []
+
+      totals = column_totals
+
+      column_headers.each_with_index do |col, index|
+        data.push({
+          value_name => totals[index]
+        })
+      end
+
+      Row.new(
+        :header     => "Total",
+        :data       => data,
+        :hash       => hash,
+        :row_name   => row_name,
+        :field_name => field_name,
+        :value_name => value_name,
+        :orthogonal_headers => column_headers
+      )
     end
 
     def build_data_row(row)
       current_row = []
       column_headers.each_with_index do |col, col_index|
-        current_row[col_index] = derive_row_value(row, col)
+        current_row[col_index] = find_data_item(row, col)
       end
       current_row
     end
 
     def find_data_item(row, col)
       source_data.find do |item|
-        if hash
-          item[row_name] == row && item[column_name] == col
-        else
-          item.send(row_name) == row && item.send(column_name) == col
-        end
-      end
-    end
-
-    def derive_row_value(row, col)
-      data_item = find_data_item(row, col)
-
-      if data_item && has_field_name?(data_item)
-        hash ? data_item[field_name] : data_item.send(field_name)
-      else
-        data_item
-      end
-    end
-
-    def has_field_name?(data_item)
-      return false if data_item.nil?
-
-      if hash
-        !!(field_name && data_item.has_key?(field_name))
-      else
-        !!(field_name && data_item.respond_to?(field_name))
+        read_data_field(item, row_name, hash) == row && read_data_field(item, column_name, hash) == col
       end
     end
   end

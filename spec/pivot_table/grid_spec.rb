@@ -53,6 +53,36 @@ module PivotTable
       it_behaves_like 'a data grid'
     end
 
+    # context 'take 2' do
+    #   let(:instance) do
+    #     Grid.new(config) do |g|
+    #       g.source_data = data
+    #       g.row_name    = :row_name
+    #       g.column_name = :column_name
+    #       g.value_name  = :id
+    #       g.field_name  = :id
+    #     end
+    #   end
+    #
+    #   let(:config) { {} }
+    #   let(:data) { sorted_data }
+    #
+    #   let(:column_headers) { %w(c1 c2 c3) }
+    #   let(:row_headers) { %w(r1 r2) }
+    #   let(:row_0) { [d1.id, d2.id, d3.id] }
+    #   let(:row_1) { [d4.id, d5.id, d6.id] }
+    #   let(:column_0) { [d1.id, d4.id] }
+    #   let(:column_1) { [d2.id, d5.id] }
+    #   let(:column_2) { [d3.id, d6.id] }
+    #   let(:column_totals) { [d1.id + d4.id, d2.id + d5.id, d3.id + d6.id] }
+    #   let(:row_totals) { [d1.id + d2.id + d3.id, d4.id + d5.id + d6.id] }
+    #   let(:grand_total) { d1.id + d2.id + d3.id + d4.id + d5.id + d6.id }
+    #
+    #   it_behaves_like 'a collection of columns'
+    #   it_behaves_like 'a collection of rows'
+    #   it_behaves_like 'a data grid'
+    # end
+    
     context 'sorting unordered data' do
       let(:config) { { :sort => true } }
       let(:data) { unsorted_data }
@@ -109,7 +139,7 @@ module PivotTable
 
         let(:build_result) { instance.build }
         subject { build_result.data_grid }
-        it { should == [[1, 2, 3], [4, 5, 6]] }
+        it { should == [[d1, d2, d3], [d4, d5, d6]] }
       end
 
       context 'field_name is wrong attribute' do
@@ -130,14 +160,20 @@ module PivotTable
     end
 
     context 'when data source entries are hash-like' do
+
+            let(:a1) {{ :date => "Monday", :participants  => 50, :gender  => "female" }}
+            let(:b1) {{ :date => "Monday", :participants  => 100, :gender => "male"   }}
+            let(:a2) {{ :date => "Tuesday", :participants => 40, :gender  => "female" }}
+            let(:b2) {{ :date => "Tuesday", :participants => 70, :gender  => "male"   }}
       # let(:data) { [{ :gender => "male" }, { :
       let(:instance) do
         Grid.new do |g|
           g.source_data = [
-            { :date => "Monday", :participants  => 50, :gender  => "female" },
-            { :date => "Monday", :participants  => 100, :gender => "male"   },
-            { :date => "Tuesday", :participants => 40, :gender  => "female" },
-            { :date => "Tuesday", :participants => 70, :gender  => "male"   }
+            a1, b1, a2, b2
+            # { :date => "Monday", :participants  => 50, :gender  => "female" },
+            # { :date => "Monday", :participants  => 100, :gender => "male"   },
+            # { :date => "Tuesday", :participants => 40, :gender  => "female" },
+            # { :date => "Tuesday", :participants => 70, :gender  => "male"   }
           ]
 
           g.row_name = :date
@@ -156,7 +192,7 @@ module PivotTable
 
       context 'data grid' do
         subject { build_result.data_grid }
-        it { should == [[50, 100], [40, 70]] }
+        it { should == [[a1, b1], [a2, b2]] }
       end
 
       context 'first data row' do
